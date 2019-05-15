@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Main {
     private static final int NUMBER_COUNT = 50000;
-    private static final int THREADS = Runtime.getRuntime().availableProcessors();
+    private static final int THREADS = 2;
     private static List<Integer> numbers = new ArrayList<>();
     private static int[][] splitArray;
     private static List<Thread> threads = new ArrayList<>();
@@ -14,6 +14,8 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
         numbers = Numbers.GenerateNumber(NUMBER_COUNT);
         splitArray = fillSplitArray(THREADS , numbers);
+
+        long startingTime = System.currentTimeMillis();
 
         class Sort {
             synchronized int[] SelectionSort(int[] arr) {
@@ -73,6 +75,7 @@ public class Main {
         sortedNumbers = sort.SelectionSort(sortedNumbers);
 
         System.out.println(Arrays.toString(sortedNumbers));
+        System.out.println("Time taken " + (System.currentTimeMillis() - startingTime) + "ms");
     }
 
     private static int[][] fillSplitArray(int arrayAmount, List<Integer> listToUse) {
