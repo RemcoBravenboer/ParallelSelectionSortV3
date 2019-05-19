@@ -4,78 +4,81 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static final int NUMBER_COUNT = 50000;
-    private static final int THREADS = 2;
-    private static List<Integer> numbers = new ArrayList<>();
+    private static final int[] NUMBERS_COUNT = {100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000};
+    private static final int THREADS = 4;
     private static int[][] splitArray;
     private static List<Thread> threads = new ArrayList<>();
-    private static int[] sortedNumbers = new int[NUMBER_COUNT];
 
     public static void main(String[] args) throws InterruptedException {
-        numbers = Numbers.GenerateNumber(NUMBER_COUNT);
-        splitArray = fillSplitArray(THREADS , numbers);
+        System.out.println("Test results (numbers | time)\n");
+        for (int z = 0; z < NUMBERS_COUNT.length; z++) {
+            int[] sortedNumbers = new int[NUMBERS_COUNT[z]];
+            List<Integer> numbers = Numbers.GenerateNumber(NUMBERS_COUNT[z]);
+            splitArray = fillSplitArray(THREADS, numbers);
 
-        long startingTime = System.currentTimeMillis();
+            long startingTime = System.currentTimeMillis();
 
-        class Sort {
-            synchronized int[] SelectionSort(int[] arr) {
-                int n = arr.length;
+            class Sort {
+                synchronized int[] SelectionSort(int[] arr) {
+                    int n = arr.length;
 
-                // One by one move boundary of unsorted subarray
-                for (int i = 0; i < n-1; i++)
-                {
-                    // Find the minimum element in unsorted array
-                    int min_idx = i;
-                    for (int j = i+1; j < n; j++)
-                        if (arr[j] < arr[min_idx])
-                            min_idx = j;
+                    // One by one move boundary of unsorted subarray
+                    for (int i = 0; i < n - 1; i++) {
+                        // Find the minimum element in unsorted array
+                        int min_idx = i;
+                        for (int j = i + 1; j < n; j++)
+                            if (arr[j] < arr[min_idx])
+                                min_idx = j;
 
-                    // Swap the found minimum element with the first
-                    // element
-                    int temp = arr[min_idx];
-                    arr[min_idx] = arr[i];
-                    arr[i] = temp;
+                        // Swap the found minimum element with the first
+                        // element
+                        int temp = arr[min_idx];
+                        arr[min_idx] = arr[i];
+                        arr[i] = temp;
+                    }
+
+                    return arr;
+                }
+            }
+
+            Sort sort = new Sort();
+
+            class SelectionSortThread extends Thread {
+                private int splitArrayIndex;
+
+                private SelectionSortThread(int splitArrayIndex) {
+                    this.splitArrayIndex = splitArrayIndex;
                 }
 
-                return arr;
+                public void run() {
+                    splitArray[splitArrayIndex] = sort.SelectionSort(splitArray[splitArrayIndex]);
+                }
             }
+
+            threads.clear();
+
+            for (int i = 0; i < THREADS; i++)
+                threads.add(new SelectionSortThread(i));
+
+            for (Thread thread : threads)
+                thread.start();
+
+            for (Thread thread : threads)
+                thread.join();
+
+
+            int x = 0;
+            for (int i = 0; i < splitArray.length; i++) {
+                for (int j = 0; j < splitArray[i].length; j++) {
+                    sortedNumbers[x] = splitArray[i][j];
+                    x++;
+                }
+            }
+
+            sortedNumbers = sort.SelectionSort(sortedNumbers);
+
+            System.out.println(NUMBERS_COUNT[z] + " | " + (System.currentTimeMillis() - startingTime) + "ms");
         }
-
-        Sort sort = new Sort();
-
-        class SelectionSortThread extends Thread {
-            private int splitArrayIndex;
-            private SelectionSortThread(int splitArrayIndex) {
-                this.splitArrayIndex = splitArrayIndex;
-            }
-            public void run() {
-                System.out.println(Arrays.toString(splitArray[splitArrayIndex]));
-                splitArray[splitArrayIndex] = sort.SelectionSort(splitArray[splitArrayIndex]);
-            }
-        }
-
-        for (int i = 0; i < THREADS; i++)
-            threads.add(new SelectionSortThread(i));
-
-        for(Thread thread: threads)
-            thread.start();
-
-        for(Thread thread: threads)
-            thread.join();
-
-
-        int x = 0;
-        for (int i = 0; i < splitArray.length; i++) {
-            for (int j = 0; j < splitArray[i].length; j++) {
-                sortedNumbers[x] = splitArray[i][j];
-                x++;
-            }
-        }
-
-        sortedNumbers = sort.SelectionSort(sortedNumbers);
-
-        System.out.println(Arrays.toString(sortedNumbers));
-        System.out.println("Time taken " + (System.currentTimeMillis() - startingTime) + "ms");
     }
 
     private static int[][] fillSplitArray(int arrayAmount, List<Integer> listToUse) {
